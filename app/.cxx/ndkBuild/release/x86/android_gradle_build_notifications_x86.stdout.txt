@@ -1,0 +1,2 @@
+[x86] Compile        : notifications <= notifications.c
+[x86] SharedLibrary  : libnotifications.so
