@@ -119,6 +119,7 @@ public class FragmentLiveTv extends MyFragment implements SurfaceHolder.Callback
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        ((MainActivity)requireActivity()).toggleFullScreen(true);
         pkg_datas = new ArrayList<>();
         for (int i = 0; i < getResources().getStringArray(R.array.package_list).length; i++) {
             pkg_datas.add(getResources().getStringArray(R.array.package_list)[i]);
@@ -687,7 +688,7 @@ public class FragmentLiveTv extends MyFragment implements SurfaceHolder.Callback
 //                TransitionManager.beginDelayedTransition(rootView);
 //            }
             constraintSet.applyTo(rootView);
-            ((MainActivity) requireActivity()).toggleFullScreen(is_full);
+//            ((MainActivity) requireActivity()).toggleFullScreen(is_full);
             ly_bottom.setVisibility(View.GONE);
             lay_header.setVisibility(View.GONE);
         }else {
@@ -702,7 +703,7 @@ public class FragmentLiveTv extends MyFragment implements SurfaceHolder.Callback
 //                TransitionManager.beginDelayedTransition(rootView);
 //            }
             constraintSet.applyTo(rootView);
-            ((MainActivity) requireActivity()).toggleFullScreen(is_full);
+//            ((MainActivity) requireActivity()).toggleFullScreen(is_full);
             showInfoBar();
         }
     }
@@ -958,6 +959,7 @@ public class FragmentLiveTv extends MyFragment implements SurfaceHolder.Callback
                     }else {
                         mHandler.removeCallbacks(mUpdateTimeTask);
                         releaseMediaPlayer();
+                        ((MainActivity)requireActivity()).toggleFullScreen(false);
                         requireActivity().getSupportFragmentManager().beginTransaction()
                                 .replace(R.id.container,((MainActivity)requireActivity()).fragmentList.get(0))//FragmentCatchupDetail
                                 .addToBackStack(null).commit();

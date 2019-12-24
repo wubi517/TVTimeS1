@@ -2,6 +2,7 @@ package com.it_tech613.tvtimes1.ui;
 
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -93,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
         list.add(new SideMenu("Movies"));
         list.add(new SideMenu("Series"));
         if (MyApp.firstServer == FirstServer.first)list.add(new SideMenu("Tv Guide"));
+        list.add(new SideMenu("Sports Guide"));
         if (MyApp.firstServer == FirstServer.first)list.add(new SideMenu("Catchup"));
         list.add(new SideMenu("Settings"));
         list.add(new SideMenu("Switch Server"));
@@ -125,8 +127,11 @@ public class MainActivity extends AppCompatActivity {
                 }else if (sideMenu.getName().equals("Switch Server")){
                     finish();
                     return null;
+                }else if (sideMenu.getName().equals("Sports Guide")){
+                    startActivity(new Intent(this, WebViewActivity.class));
+                    return null;
                 }
-
+                if (sideMenu.getName().equals("Catchup") || sideMenu.getName().equals("Settings")) position-=1;
                 replaceFragment(fragmentList.get(position),position);
             }
             return null;

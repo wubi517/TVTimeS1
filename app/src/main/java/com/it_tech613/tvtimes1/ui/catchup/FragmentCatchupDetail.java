@@ -115,10 +115,10 @@ public class FragmentCatchupDetail extends MyFragment {
                 intent.putExtra("start_mil",start_mil);
                 intent.putExtra("now_mil",now_mil);
                 intent.putExtra("is_live",false);
-                intent.putExtra("dec",epgEvent.getDec());
-                intent.putExtra("current_dec",epgEvent.getTitle());
+                intent.putExtra("dec",new String(Base64.decode(epgEvent.getDec(),Base64.DEFAULT)));
+                intent.putExtra("current_dec",new String(Base64.decode(epgEvent.getTitle(), Base64.DEFAULT)));
                 if(epgEvent.getNextEvent()!=null){
-                    intent.putExtra("next_dec",epgEvent.getNextEvent().getTitle());
+                    intent.putExtra("next_dec",new String(Base64.decode(epgEvent.getNextEvent().getTitle(),Base64.DEFAULT)));
                 }else {
                     intent.putExtra("next_dec","No Information");
                 }

@@ -104,6 +104,7 @@ public class FragmentIjkLiveTv extends MyFragment implements View.OnClickListene
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        ((MainActivity)requireActivity()).toggleFullScreen(true);
         mMediaController = new AndroidMediaController(requireContext(), false);
         if (Constants.getRecentFullModel(MyApp.fullModels_filter).getChannels().size()==0) {
             lastPlayingCategoryPos=1;

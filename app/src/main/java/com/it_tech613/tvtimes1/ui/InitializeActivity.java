@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.*;
 import android.util.Base64;
@@ -103,38 +104,32 @@ public class InitializeActivity extends Activity implements View.OnClickListener
 
         videoView = findViewById(R.id.video_view);
         videoView.setVisibility(View.GONE);
-        is_video_played=true;
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
-            CheckSDK23Permission();
-        } else if(num_server==1){
-            getRespond();
+        if (is_video_played){
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+                CheckSDK23Permission();
+            } else if(num_server==1){
+                getRespond();
+            }
         }
-//        if (is_video_played){
-//            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
-//                CheckSDK23Permission();
-//            } else if(num_server==1){
-//                getRespond();
-//            }
-//        }
-//        else {
-//            videoView.setVisibility(View.VISIBLE);
-//            videoView.setVideoSize(MyApp.SCREEN_WIDTH,MyApp.SCREEN_HEIGHT);
-//            String path = "android.resource://" + getPackageName() + "/" + R.raw.video;
-//            videoView.setVideoURI(Uri.parse(path));
-//            videoView.start();
-//            videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-//                @Override
-//                public void onCompletion(MediaPlayer mediaPlayer) {
-//                    videoView.setVisibility(View.GONE);
-//                    is_video_played=true;
-//                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
-//                        CheckSDK23Permission();
-//                    } else if(num_server==1){
-//                        getRespond();
-//                    }
-//                }
-//            });
-//        }
+        else {
+            videoView.setVisibility(View.VISIBLE);
+            videoView.setVideoSize(MyApp.SCREEN_WIDTH,MyApp.SCREEN_HEIGHT);
+            String path = "android.resource://" + getPackageName() + "/" + R.raw.video;
+            videoView.setVideoURI(Uri.parse(path));
+            videoView.start();
+            videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mediaPlayer) {
+                    videoView.setVisibility(View.GONE);
+                    is_video_played=true;
+                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+                        CheckSDK23Permission();
+                    } else if(num_server==1){
+                        getRespond();
+                    }
+                }
+            });
+        }
         if (num_server!=1) {
             icon1 = findViewById(R.id.icon1);
             icon2 = findViewById(R.id.icon2);

@@ -184,6 +184,7 @@ public class FragmentExoLiveTv extends MyFragment implements View.OnClickListene
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        ((MainActivity)requireActivity()).toggleFullScreen(true);
         mediaDataSourceFactory = buildDataSourceFactory(true);
         requireActivity().setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
