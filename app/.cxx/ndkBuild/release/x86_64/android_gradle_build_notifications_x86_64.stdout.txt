@@ -1,2 +1,1 @@
-[x86_64] Compile        : notifications <= notifications.c
-[x86_64] SharedLibrary  : libnotifications.so
+make: Nothing to be done for 'notifications'.

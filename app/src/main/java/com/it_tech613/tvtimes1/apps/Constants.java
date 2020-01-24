@@ -60,7 +60,9 @@ public class Constants {
     public static SimpleDateFormat epgFormat = new SimpleDateFormat("yyyyMMddHHmmss Z");
     public static long SEVER_OFFSET;
     public static DataModel userDataModel;
-
+    public static String getMacAddress(){
+        return MAC_ADDRESS+MyApp.firstServer.getValue();
+    }
     public static String getCurrentPlayer(){
         return CURRENT_PLAYER+MyApp.firstServer.getValue();
     }

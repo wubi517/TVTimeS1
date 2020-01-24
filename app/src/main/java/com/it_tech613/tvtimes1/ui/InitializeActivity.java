@@ -2,7 +2,6 @@ package com.it_tech613.tvtimes1.ui;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -11,17 +10,27 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
-import android.os.*;
+import android.os.AsyncTask;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Environment;
+import android.os.StrictMode;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.signature.ObjectKey;
@@ -37,13 +46,17 @@ import com.it_tech613.tvtimes1.models.FirstServer;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InitializeActivity extends Activity implements View.OnClickListener {
+public class InitializeActivity extends AppCompatActivity implements View.OnClickListener {
 
     SharedPreferences serveripdetails;
     String version,app_Url;
@@ -53,7 +66,7 @@ public class InitializeActivity extends Activity implements View.OnClickListener
     static {
         System.loadLibrary("notifications");
     }
-    ImageButton icon1,icon2,icon3;
+    ImageButton icon1,icon2 ,icon3;
 
     public native String get1();
     public native String getTwo();
@@ -65,6 +78,13 @@ public class InitializeActivity extends Activity implements View.OnClickListener
     public native String getUrl1();
     public native String getUrl2();
     public native String getUrl3();
+    public native String getUrl4();
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        MyApp.instance.setKpHUD(this);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,7 +94,6 @@ public class InitializeActivity extends Activity implements View.OnClickListener
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
         serveripdetails = this.getSharedPreferences(BuildConfig.APPLICATION_ID, Context.MODE_PRIVATE);
-
         this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         try {
@@ -151,6 +170,7 @@ public class InitializeActivity extends Activity implements View.OnClickListener
 
     private void getRespond(){
         try {
+            runOnUiThread(()->MyApp.instance.getKpHUD().show());
             String response = MyApp.instance.getIptvclient().login(Constants.GetKey(this));
             Log.e("response",response);
             try {
@@ -174,7 +194,7 @@ public class InitializeActivity extends Activity implements View.OnClickListener
                         MyApp.instance.getPreference().put(Constants.getCurrentPlayer(),0);
                     }
 //                            getUpdate();
-                    MyApp.instance.loadVersion();
+                    MyApp.instance.getKpHUD().dismiss();
                     getStart();
 
                 } else {
@@ -262,7 +282,7 @@ public class InitializeActivity extends Activity implements View.OnClickListener
                 MyApp.firstServer = FirstServer.third;
                 break;
         }
-        getRespond();
+        new Thread(this::getRespond).start();
     }
 
     @SuppressLint("StaticFieldLeak")
@@ -349,8 +369,7 @@ public class InitializeActivity extends Activity implements View.OnClickListener
     }
 
     private void getStart() {
-        startActivity(new Intent(InitializeActivity.this, LoginActivity.class));
-        if (num_server==1) finish();
+        SelectTypeDlg();
     }
 
     private void startInstall(File fileName) {
@@ -359,5 +378,37 @@ public class InitializeActivity extends Activity implements View.OnClickListener
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         startActivity(intent);
+    }
+
+    private void SelectTypeDlg(){
+        FragmentManager fm = getSupportFragmentManager();
+        assert fm != null;
+        FragmentTransaction ft = fm.beginTransaction();
+        Fragment prev = fm.findFragmentByTag("fragment_alert");
+        if (prev != null) {
+            ft.remove(prev);
+            ft.addToBackStack(null);
+            return;
+        }
+
+        final SelectLoginTypeDlg selectLoginTypeDlg = new SelectLoginTypeDlg();
+        selectLoginTypeDlg.setSelectListener(position -> {
+            Intent intent = new Intent(InitializeActivity.this,LoginActivity.class);
+            switch (position){
+                case 1:
+                    MyApp.is_mac = false;
+                    intent.putExtra("type",1);
+                    startActivity(intent);
+                    if (num_server==1) finish();
+                    break;
+                case 2:
+                    MyApp.is_mac = true;
+                    intent.putExtra("type",2);
+                    startActivity(intent);
+                    if (num_server==1) finish();
+                    break;
+            }
+        });
+        selectLoginTypeDlg.show(fm,"fragment_alert");
     }
 }

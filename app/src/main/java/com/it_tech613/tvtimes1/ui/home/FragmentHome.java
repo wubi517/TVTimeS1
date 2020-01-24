@@ -31,6 +31,8 @@ import com.it_tech613.tvtimes1.ui.series.FragmentSeriesHolder;
 import com.it_tech613.tvtimes1.utils.MyFragment;
 import com.squareup.picasso.Picasso;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -98,7 +100,25 @@ public class FragmentHome extends MyFragment {
     }
 
     private void playVideo(EPGChannel epgChannel) {
-        String url = MyApp.instance.getIptvclient().buildLiveStreamURL(MyApp.user,MyApp.pass,String.valueOf(epgChannel.getStream_id()),"ts");
+        String url = "";
+        if(MyApp.is_local){
+            String response;
+            JSONObject jsonObject;
+            JSONObject js;
+            String cmd = "ffmpeg http://localhost/ch/"+epgChannel.getStream_id()+"_";
+            try {
+                response = MyApp.instance.getIptvclient().macCmd(cmd);
+                Log.e("macCmd",response);
+                jsonObject = new JSONObject(response);
+                js = jsonObject.getJSONObject("js");
+                cmd = js.getString("cmd");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            url = cmd.replaceAll("ffmpeg","").replaceAll("auto","").replaceAll("\\s+","");
+        }else {
+            url = MyApp.instance.getIptvclient().buildLiveStreamURL(MyApp.user,MyApp.pass,String.valueOf(epgChannel.getStream_id()),"ts");
+        }
         Log.e("Iptvclient",url);
         int current_player = (int) MyApp.instance.getPreference().get(Constants.getCurrentPlayer());
         Intent intent;

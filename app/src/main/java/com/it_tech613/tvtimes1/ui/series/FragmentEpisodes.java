@@ -3,6 +3,7 @@ package com.it_tech613.tvtimes1.ui.series;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -24,6 +25,8 @@ import com.it_tech613.tvtimes1.ui.VideoIjkPlayActivity;
 import com.it_tech613.tvtimes1.ui.VideoPlayActivity;
 import com.it_tech613.tvtimes1.utils.MyFragment;
 
+import org.json.JSONObject;
+
 import kotlin.Unit;
 import kotlin.jvm.functions.Function2;
 
@@ -33,7 +36,7 @@ import java.util.List;
 
 public class FragmentEpisodes extends MyFragment {
     private SimpleDraweeView image;
-
+    private EpisodeModel current_model= new EpisodeModel();
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -62,6 +65,7 @@ public class FragmentEpisodes extends MyFragment {
             @Override
             public Unit invoke(Integer integer, EpisodeModel episodeModel) {
                 //add recent series
+                current_model = episodeModel;
                 checkAddedRecent(MyApp.selectedSeriesModel);
                 Constants.getRecentCatetory(MyApp.series_categories).getSeriesModels().add(0,MyApp.selectedSeriesModel);
                 //get recent series names list
@@ -76,26 +80,7 @@ public class FragmentEpisodes extends MyFragment {
                 //onclicklistener
                 String episode_url = MyApp.instance.getIptvclient().buildSeriesStreamURL(MyApp.user,MyApp.pass,episodeModel.getStream_id(),episodeModel.getContainer_extension());
                 Log.e(getClass().getSimpleName(),episode_url);
-                int current_player = (int) MyApp.instance.getPreference().get(Constants.getCurrentPlayer());
-                Intent intent;
-                switch (current_player){
-                    case 0:
-                        intent = new Intent(requireContext(), VideoPlayActivity.class);
-                         break;
-                    case 1:
-                        intent = new Intent(requireContext(), VideoIjkPlayActivity.class);
-                        break;
-                    case 2:
-                        intent = new Intent(requireContext(), VideoExoPlayActivity.class);
-                        break;
-                    default:
-                        intent = new Intent(requireContext(), VideoPlayActivity.class);
-                        break;
-                }
-                intent.putExtra("title",episodeModel.getTitle());
-                intent.putExtra("img",episodeModel.getEpisodeInfoModel().getMovie_image());
-                intent.putExtra("url",episode_url);
-                startActivity(intent);
+                new Thread(()->startMovie()).start();
                 return null;
             }
         }, (integer, episodeInfoModel) -> {
@@ -108,6 +93,54 @@ public class FragmentEpisodes extends MyFragment {
         });
         seriesRecyclerView.setAdapter(episodeListAdapter);
         image.setImageURI(Uri.parse(MyApp.selectedSeriesModel.getStream_icon()));
+    }
+
+    private void startMovie(){
+        String episode_url = "";
+        if(MyApp.is_mac){
+            String response = "",cmd = "";
+            JSONObject jsonObject,js;
+            int season_num = MyApp.selectedSeasonModel.getSeason_number();
+            String series_id = MyApp.selectedSeriesModel.getSeries_id();
+            String str_cmd = "{\"type\":\"series\",\"series_id\":"+series_id+",\"season_num\":"+season_num+"}";
+            Log.e("str_cmd",str_cmd);
+            Log.e("episode_num",current_model.getEpisode_num()+"");
+            cmd = Base64.encodeToString(str_cmd.getBytes(),Base64.DEFAULT).replaceAll("\\s+","").replaceAll("\n","");
+            try {
+                response = MyApp.instance.getIptvclient().macSeriesCmd(cmd,current_model.getEpisode_num()+"");
+                Log.e("macVodCmd",response);
+                jsonObject = new JSONObject(response);
+                js = jsonObject.getJSONObject("js");
+                episode_url = js.getString("cmd");
+                episode_url = episode_url.replaceAll("ffmpeg","").replaceAll("auto","").replaceAll("\\s+","");
+            }catch (Exception e){
+                episode_url = MyApp.instance.getIptvclient().buildSeriesStreamURL(MyApp.user,MyApp.pass,current_model.getStream_id(),current_model.getContainer_extension());
+            }
+            if(episode_url==null ||  episode_url.isEmpty() ||  episode_url.equalsIgnoreCase("null")){
+                episode_url = MyApp.instance.getIptvclient().buildSeriesStreamURL(MyApp.user,MyApp.pass,current_model.getStream_id(),current_model.getContainer_extension());
+            }
+        }else {
+            episode_url = MyApp.instance.getIptvclient().buildSeriesStreamURL(MyApp.user,MyApp.pass,current_model.getStream_id(),current_model.getContainer_extension());
+        }
+        episode_url = episode_url.replaceAll("\\s+","");
+        Log.e(getClass().getSimpleName(),episode_url);
+        int current_player = (int) MyApp.instance.getPreference().get(Constants.getCurrentPlayer());
+        Intent intent;
+        switch (current_player){
+            case 1:
+                intent = new Intent(requireContext(), VideoIjkPlayActivity.class);
+                break;
+            case 2:
+                intent = new Intent(requireContext(), VideoExoPlayActivity.class);
+                break;
+            default:
+                intent = new Intent(requireContext(), VideoPlayActivity.class);
+                break;
+        }
+        intent.putExtra("title",current_model.getTitle());
+        intent.putExtra("img",current_model.getEpisodeInfoModel().getMovie_image());
+        intent.putExtra("url",episode_url);
+        startActivity(intent);
     }
     @Override
     public boolean myOnKeyDown(KeyEvent event){

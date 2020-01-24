@@ -67,10 +67,13 @@ public class MyApp extends Application {
     public static List<String> maindatas;
 
     public static Map backup_map;
-    public static String version_name,mac_address,version_str,user,pass,created_at,status,is_trail,active_cons,max_cons;
+    public static String version_name,mac_address,version_str,user,pass,created_at,status,is_trail,active_cons,max_cons, time_zone;
     public static int SCREEN_WIDTH, SCREEN_HEIGHT, ITEM_V_WIDTH, ITEM_V_HEIGHT,SURFACE_WIDTH,SURFACE_HEIGHT,top_margin,right_margin,
             channel_size,EPG_WIDTH,EPG_HEIGHT,EPG_TOP,EPG_RIGHT;
     public static boolean is_first,is_vpn = false;
+
+    public static boolean is_local = false;
+    public static boolean is_mac = false;
 
     public static FirstServer firstServer=FirstServer.first;
 

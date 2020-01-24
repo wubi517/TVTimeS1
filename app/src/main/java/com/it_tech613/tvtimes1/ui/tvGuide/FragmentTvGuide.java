@@ -35,6 +35,7 @@ import com.it_tech613.tvtimes1.ui.liveTv.CategoryAdapter;
 import com.it_tech613.tvtimes1.ui.liveTv.PinDlg;
 import com.it_tech613.tvtimes1.utils.MyFragment;
 
+import org.json.JSONObject;
 import org.videolan.libvlc.IVLCVout;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.Media;
@@ -101,7 +102,14 @@ public class FragmentTvGuide extends MyFragment implements IVLCVout.Callback, Su
         def_lay = view.findViewById(R.id.def_lay);
         surfaceView = view.findViewById(R.id.surface_view);
         ly_surface = view.findViewById(R.id.ly_surface);
+        ly_surface.setOnClickListener(this);
+        holder = surfaceView.getHolder();
+        holder.addCallback(this);
+        holder.setFormat(PixelFormat.RGBX_8888);
+
         remote_subtitles_surface = view.findViewById(R.id.remote_subtitles_surface);
+        remote_subtitles_surface.setZOrderMediaOverlay(true);
+        remote_subtitles_surface.getHolder().setFormat(PixelFormat.TRANSLUCENT);
         current_channel_image = view.findViewById(R.id.current_channel_image);
         duration = view.findViewById(R.id.textView4);
         title = view.findViewById(R.id.textView7);
@@ -294,13 +302,6 @@ public class FragmentTvGuide extends MyFragment implements IVLCVout.Callback, Su
         });
         epg_recyclerview.setAdapter(epgAdapter);
 
-        ly_surface.setOnClickListener(this);
-        holder = surfaceView.getHolder();
-        holder.addCallback(this);
-        holder.setFormat(PixelFormat.RGBX_8888);
-
-        remote_subtitles_surface.setZOrderMediaOverlay(true);
-        remote_subtitles_surface.getHolder().setFormat(PixelFormat.TRANSLUCENT);
         ViewGroup.LayoutParams params = ly_surface.getLayoutParams();
         params.height = MyApp.SURFACE_HEIGHT;
         params.width = MyApp.SURFACE_WIDTH;
@@ -444,9 +445,25 @@ public class FragmentTvGuide extends MyFragment implements IVLCVout.Callback, Su
 
     private void goVideoActivity(EPGChannel epgChannel){
         Log.e(TAG,"Start Video");
-        String url = MyApp.instance.getIptvclient().buildLiveStreamURL(MyApp.user, MyApp.pass,
-                epgChannel.getStream_id()+"","ts");
-        Log.e(getClass().getSimpleName(),url);
+        if(MyApp.is_local){
+            String response;
+            JSONObject jsonObject;
+            JSONObject js;
+            String cmd = "ffmpeg http://localhost/ch/"+epgChannel.getStream_id()+"_";
+            try {
+                response = MyApp.instance.getIptvclient().macCmd(cmd);
+                Log.e("macCmd",response);
+                jsonObject = new JSONObject(response);
+                js = jsonObject.getJSONObject("js");
+                cmd = js.getString("cmd");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            contentUri = cmd.replaceAll("ffmpeg","").replaceAll("auto","").replaceAll("\\s+","");
+        }else {
+            contentUri = MyApp.instance.getIptvclient().buildLiveStreamURL(MyApp.user,MyApp.pass,String.valueOf(epgChannel.getStream_id()),"ts");
+        }
+        Log.e(getClass().getSimpleName(),contentUri);
         int current_player = (int) MyApp.instance.getPreference().get(Constants.getCurrentPlayer());
         Intent intent;
         switch (current_player){
@@ -462,7 +479,7 @@ public class FragmentTvGuide extends MyFragment implements IVLCVout.Callback, Su
         }
         intent.putExtra("title",epgChannel.getName());
         intent.putExtra("img",epgChannel.getImageURL());
-        intent.putExtra("url",url);
+        intent.putExtra("url",contentUri);
         intent.putExtra("stream_id",epgChannel.getStream_id());
         intent.putExtra("is_live",true);
         startActivity(intent);
@@ -497,6 +514,24 @@ public class FragmentTvGuide extends MyFragment implements IVLCVout.Callback, Su
         selectedEpgChannel = epgChannel;
         contentUri = MyApp.instance.getIptvclient().buildLiveStreamURL(MyApp.user, MyApp.pass,
                 epgChannel.getStream_id()+"","ts");
+        if(MyApp.is_local){
+            String response;
+            JSONObject jsonObject;
+            JSONObject js;
+            String cmd = "ffmpeg http://localhost/ch/"+epgChannel.getStream_id()+"_";
+            try {
+                response = MyApp.instance.getIptvclient().macCmd(cmd);
+                Log.e("macCmd",response);
+                jsonObject = new JSONObject(response);
+                js = jsonObject.getJSONObject("js");
+                cmd = js.getString("cmd");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            contentUri = cmd.replaceAll("ffmpeg","").replaceAll("auto","").replaceAll("\\s+","");
+        }else {
+            contentUri = MyApp.instance.getIptvclient().buildLiveStreamURL(MyApp.user,MyApp.pass,String.valueOf(epgChannel.getStream_id()),"ts");
+        }
         Log.e("url",contentUri);
         if(def_lay.getVisibility()== View.VISIBLE) def_lay.setVisibility(View.GONE);
         releaseMediaPlayer();

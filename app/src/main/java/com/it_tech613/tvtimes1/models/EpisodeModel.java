@@ -15,6 +15,17 @@ public class EpisodeModel {
     private int seasonId;
 
     private boolean is_watched=false;
+
+    public int getEpisode_num() {
+        return episode_num;
+    }
+
+    public void setEpisode_num(int episode_num) {
+        this.episode_num = episode_num;
+    }
+
+    @SerializedName("episode_num")
+    private int episode_num;
     public String getStream_id() {
         return stream_id;
     }

@@ -2,6 +2,7 @@ package com.it_tech613.tvtimes1.ui.movies;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.util.Base64;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.Button;
@@ -237,31 +238,57 @@ public class FragmentMovieDetail extends MyFragment implements View.OnClickListe
                 Log.e(getClass().getSimpleName(),"added");
 
                 //watchMovie
-                String vod_url = MyApp.instance.getIptvclient().buildMovieStreamURL(MyApp.user,MyApp.pass,showMovieModel.getStream_id(),showMovieModel.getExtension());
-                Log.e(getClass().getSimpleName(),vod_url);
 
-                int current_player = (int) MyApp.instance.getPreference().get(Constants.getCurrentPlayer());
-                Intent intent;
-                switch (current_player){
-                    case 1:
-                        intent = new Intent(requireContext(), VideoIjkPlayActivity.class);
-                        break;
-                    case 2:
-                        intent = new Intent(requireContext(), VideoExoPlayActivity.class);
-                        break;
-                    default:
-                        intent = new Intent(requireContext(), VideoPlayActivity.class);
-                        break;
-                }
-                MyApp.vod_model = showMovieModel;
-                intent.putExtra("title",showMovieModel.getName());
-                intent.putExtra("img",showMovieModel.getStream_icon());
-                intent.putExtra("url",vod_url);
-                startActivity(intent);
+                new Thread(this::startMovie).start();
                 break;
         }
     }
+    private void startMovie() {
+        //watchMovie
+        String vod_url = "",str_cmd = "",cmd = "",response="";
+        JSONObject jsonObject,js;
+        if(MyApp.is_mac){
+            str_cmd = "{\"type\":\"movie\",\"stream_id\":\""+showMovieModel.getStream_id()+"\",\"stream_source\":null,\"target_container\":\"[\\\""+showMovieModel.getExtension()+"\\\"]\"}";
+            Log.e("str_cmd",str_cmd);
+            cmd = Base64.encodeToString(str_cmd.getBytes(),Base64.DEFAULT).replaceAll("\\s+","").replaceAll("\n","");
+            Log.e("cmd",cmd);
+            try {
+                response = MyApp.instance.getIptvclient().macVodCmd(cmd);
+                Log.e("macVodCmd",response);
+                jsonObject = new JSONObject(response);
+                js = jsonObject.getJSONObject("js");
+                vod_url = js.getString("cmd");
+                vod_url = vod_url.replaceAll("ffmpeg","").replaceAll("auto","").replaceAll("\\s+","");
+                Log.e(getClass().getSimpleName(),vod_url);
+            }catch (Exception ignored){
+                vod_url = MyApp.instance.getIptvclient().buildMovieStreamURL(MyApp.user,MyApp.pass,showMovieModel.getStream_id(),showMovieModel.getExtension());
+            }
+            if(vod_url==null ||  vod_url.isEmpty() ||  vod_url.equalsIgnoreCase("null")){
+                vod_url = MyApp.instance.getIptvclient().buildMovieStreamURL(MyApp.user,MyApp.pass,showMovieModel.getStream_id(),showMovieModel.getExtension());
+            }
+        }else {
+            vod_url = MyApp.instance.getIptvclient().buildMovieStreamURL(MyApp.user,MyApp.pass,showMovieModel.getStream_id(),showMovieModel.getExtension());
+        }
 
+        int current_player = (int) MyApp.instance.getPreference().get(Constants.getCurrentPlayer());
+        Intent intent;
+        switch (current_player){
+            case 1:
+                intent = new Intent(requireContext(), VideoIjkPlayActivity.class);
+                break;
+            case 2:
+                intent = new Intent(requireContext(), VideoExoPlayActivity.class);
+                break;
+            default:
+                intent = new Intent(requireContext(), VideoPlayActivity.class);
+                break;
+        }
+        MyApp.vod_model = showMovieModel;
+        intent.putExtra("title",showMovieModel.getName());
+        intent.putExtra("img",showMovieModel.getStream_icon());
+        intent.putExtra("url",vod_url);
+        startActivity(intent);
+    }
     private void checkAddedRecent(MovieModel showMovieModel) {
         try {
             Iterator<MovieModel> iter = Constants.getRecentCatetory(MyApp.vod_categories).getMovieModels().iterator();

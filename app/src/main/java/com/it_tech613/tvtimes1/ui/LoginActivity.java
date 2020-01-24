@@ -1,19 +1,31 @@
 package com.it_tech613.tvtimes1.ui;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.*;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
-import android.os.Bundle;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.signature.ObjectKey;
@@ -25,6 +37,7 @@ import com.it_tech613.tvtimes1.apps.Constants;
 import com.it_tech613.tvtimes1.apps.MyApp;
 import com.it_tech613.tvtimes1.models.*;
 import com.it_tech613.tvtimes1.utils.Utils;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,16 +46,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-public class LoginActivity extends AppCompatActivity  implements View.OnClickListener{
+public class LoginActivity extends AppCompatActivity implements View.OnClickListener{
 
-    private EditText name_txt, pass_txt;
+    private EditText name_txt, pass_txt, mac_address;
     private ProgressBar progressBar;
     private String user;
     private String password;
     private CheckBox checkBox;
     boolean is_remember = false;
+    private LinearLayout lay_mac, lay_user_pass;
+    private boolean is_pass_mode = true;
+    private Button btn_change_mode, btn_login;
+    SharedPreferences serveripdetails;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,14 +75,13 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
                 .penaltyLog()
                 .detectAll()
                 .build());
-
+        serveripdetails = this.getSharedPreferences(BuildConfig.APPLICATION_ID, Context.MODE_PRIVATE);
         this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        if (MyApp.instance.getPreference().get(Constants.MAC_ADDRESS) == null) {
+        if (MyApp.instance.getPreference().get(Constants.getMacAddress()) == null)
             MyApp.mac_address = Utils.getPhoneMac(LoginActivity.this);
-            MyApp.instance.getPreference().put(Constants.MAC_ADDRESS, MyApp.mac_address.toUpperCase());
-        } else
-            MyApp.mac_address = (String) MyApp.instance.getPreference().get(Constants.MAC_ADDRESS);
+        else
+            MyApp.mac_address = (String) MyApp.instance.getPreference().get(Constants.getMacAddress());
 
         RelativeLayout main_lay = findViewById(R.id.main_lay);
         Bitmap myImage = getBitmapFromURL(Constants.GetLoginImage(LoginActivity.this));
@@ -71,30 +90,24 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
         progressBar = findViewById(R.id.login_progress);
         name_txt = findViewById(R.id.login_name);
         pass_txt =  findViewById(R.id.login_pass);
-        TextView phone = findViewById(R.id.phone);
         checkBox = findViewById(R.id.checkbox);
         checkBox.setOnClickListener(this);
-
-        if(MyApp.instance.getPreference().get(Constants.getLoginInfo())!=null){
-            LoginModel loginModel = (LoginModel) MyApp.instance.getPreference().get(Constants.getLoginInfo());
-            user = loginModel.getUser_name();
-            password = loginModel.getPassword();
-            name_txt.setText(user);
-            pass_txt.setText(password);
-            checkBox.setChecked(true);
-            new Thread(this::callLogin).start();
-        }
-        if (BuildConfig.DEBUG){
-            name_txt.setText("newapp");
-            pass_txt.setText("aAmYFqEn");
-        }
-
-        TextView mac_txt = findViewById(R.id.login_mac_address);
-        mac_txt.setText(MyApp.mac_address);
-        TextView version_txt =  findViewById(R.id.app_version_code);
+        lay_mac = findViewById(R.id.lay_mac);
+        lay_user_pass = findViewById(R.id.lay_user_pass);
+        btn_change_mode = (Button)findViewById(R.id.btn_change_mode);
+        btn_change_mode.setVisibility(View.GONE);
+        btn_change_mode.setOnClickListener(this);
+        mac_address = findViewById(R.id.mac_address);
+        btn_login = findViewById(R.id.login_btn);
+        btn_login.setOnClickListener(this);
+        btn_change_mode.setEnabled(true);
+        btn_login.setEnabled(true);
+//        type = getIntent().getIntExtra("type",0);
+        toggleMode(!MyApp.is_mac);
+        MyApp.instance.loadVersion();
+        TextView version_txt = findViewById(R.id.app_version_code);
         MyApp.version_str = "v " + MyApp.version_name;
         version_txt.setText(MyApp.version_str);
-        findViewById(R.id.login_btn).setOnClickListener(this);
         ImageView logo = (ImageView) findViewById(R.id.logo);
         Glide.with(LoginActivity.this)
                 .load(Constants.GetIcon(LoginActivity.this))
@@ -105,33 +118,36 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
 
     private void callLogin() {
         try {
-            runOnUiThread(()->progressBar.setVisibility(View.VISIBLE));
+            runOnUiThread(()->{
+                btn_change_mode.setEnabled(false);
+                btn_login.setEnabled(false);
+                progressBar.setVisibility(View.VISIBLE);
+            });
             long startTime = System.nanoTime();
             String responseBody = MyApp.instance.getIptvclient().authenticate(user,password);
             long endTime = System.nanoTime();
 
             long MethodeDuration = (endTime - startTime);
-            Log.e(getClass().getSimpleName(),"responseBody: " + responseBody);
+            Log.e(getClass().getSimpleName(),responseBody);
             Log.e("BugCheck","authenticate success "+MethodeDuration);
-            JSONObject map = new JSONObject(responseBody);
             MyApp.user = user;
             MyApp.pass = password;
             JSONObject u_m;
             try {
+                JSONObject map = new JSONObject(responseBody);
                 u_m = map.getJSONObject("user_info");
                 if (!u_m.has("username")) {
                     runOnUiThread(()->{
-                        Toast.makeText(getApplicationContext(), "Username is incorrect", Toast.LENGTH_LONG).show();
                         progressBar.setVisibility(View.GONE);
+                        Toast.makeText(LoginActivity.this, "Username is incorrect", Toast.LENGTH_LONG).show();
                     });
                 } else {
                     MyApp.created_at = u_m.getString("created_at");
                     MyApp.status = u_m.getString("status");
                     if(!MyApp.status.equalsIgnoreCase("Active")){
                         runOnUiThread(()->{
-                            Intent intent =new Intent(LoginActivity.this,EmptyActivity.class);
-                            intent.putExtra("msg","Your account is Expired");
-                            startActivity(intent);
+                            progressBar.setVisibility(View.GONE);
+                            Toast.makeText(LoginActivity.this, "Username is incorrect", Toast.LENGTH_LONG).show();
                         });
                         return;
                     }
@@ -155,7 +171,10 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
                     MyApp.loginModel = loginModel;
                     Log.e("remember",String.valueOf(is_remember));
                     if(checkBox.isChecked()){
-                        MyApp.instance.getPreference().put(Constants.getLoginInfo(), loginModel);
+                        if (is_pass_mode)
+                            MyApp.instance.getPreference().put(Constants.getLoginInfo(), loginModel);
+                        else
+                            MyApp.instance.getPreference().put(Constants.getMacAddress(), MyApp.mac_address.toUpperCase());
                     }
                     JSONObject serverInfo= map.getJSONObject("server_info");
                     String  my_timestamp= serverInfo.getString("timestamp_now");
@@ -166,13 +185,18 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
             } catch (JSONException e) {
                 runOnUiThread(()->{
                     progressBar.setVisibility(View.GONE);
-                    Toast.makeText(getApplicationContext(), "Username is incorrect", Toast.LENGTH_LONG).show();
-                    e.printStackTrace();
+                    Toast.makeText(LoginActivity.this, "Username is incorrect", Toast.LENGTH_LONG).show();
+                    btn_change_mode.setEnabled(true);
+                    btn_login.setEnabled(true);
                 });
+                e.printStackTrace();
+
             }
         } catch (Exception e) {
             e.printStackTrace();
             runOnUiThread(() -> {
+                btn_change_mode.setEnabled(true);
+                btn_login.setEnabled(true);
                 ConnectionDlg connectionDlg = new ConnectionDlg(LoginActivity.this, new ConnectionDlg.DialogConnectionListener() {
                     @Override
                     public void OnRetryClick(Dialog dialog) {
@@ -193,7 +217,7 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
     private void callVodCategory(){
         try {
             long startTime = System.nanoTime();
-//api call here
+            //api call here
             String map = MyApp.instance.getIptvclient().getMovieCategories(user,password);
             long endTime = System.nanoTime();
 
@@ -201,10 +225,12 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
             //Log.e(getClass().getSimpleName(),map);
             Log.e("BugCheck","getMovieCategories success "+MethodeDuration);
             try {
+
                 Gson gson=new Gson();
                 map = map.replaceAll("[^\\x00-\\x7F]", "");
                 List<CategoryModel> categories;
                 categories = new ArrayList<>();
+
                 categories.add(getRecentMovies());
                 categories.add(new CategoryModel(Constants.all_id,Constants.All,""));
                 categories.add(getFavoriteCategory());
@@ -212,12 +238,14 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
                 categories.addAll(gson.fromJson(map, new TypeToken<List<CategoryModel>>(){}.getType()));
                 MyApp.vod_categories = categories;
             }catch (Exception e){
-                e.printStackTrace();
+
             }
             callLiveCategory();
         } catch (Exception e) {
             e.printStackTrace();
             runOnUiThread(() -> {
+                btn_change_mode.setEnabled(true);
+                btn_login.setEnabled(true);
                 ConnectionDlg connectionDlg = new ConnectionDlg(LoginActivity.this, new ConnectionDlg.DialogConnectionListener() {
                     @Override
                     public void OnRetryClick(Dialog dialog) {
@@ -291,13 +319,15 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
                     }
                 }
             }catch (Exception e){
-                e.printStackTrace();
+
             }
 
             callSeriesCategory();
         } catch (Exception e) {
             e.printStackTrace();
             runOnUiThread(() -> {
+                btn_change_mode.setEnabled(true);
+                btn_login.setEnabled(true);
                 ConnectionDlg connectionDlg = new ConnectionDlg(LoginActivity.this, new ConnectionDlg.DialogConnectionListener() {
                     @Override
                     public void OnRetryClick(Dialog dialog) {
@@ -318,29 +348,34 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
     private void callSeriesCategory(){
         try {
             long startTime = System.nanoTime();
+//api call here
             String map = MyApp.instance.getIptvclient().getSeriesCategories(user,password);
             long endTime = System.nanoTime();
+
             long MethodeDuration = (endTime - startTime);
             //Log.e(getClass().getSimpleName(),map);
             Log.e("BugCheck","getSeriesCategories success "+MethodeDuration);
-            Gson gson=new Gson();
-            map = map.replaceAll("[^\\x00-\\x7F]", "");
-            List<CategoryModel> categories;
-            categories = new ArrayList<>();
-            categories.add(new CategoryModel(Constants.recent_id,Constants.Recently_Viewed,""));
-            categories.add(new CategoryModel(Constants.all_id,Constants.All,""));
-            categories.add(new CategoryModel(Constants.fav_id,Constants.Favorites,""));
-            categories.add(new CategoryModel(Constants.no_name_id,Constants.No_Name_Category,""));
             try {
+                Gson gson=new Gson();
+                map = map.replaceAll("[^\\x00-\\x7F]", "");
+                List<CategoryModel> categories;
+                categories = new ArrayList<>();
+                categories.add(new CategoryModel(Constants.recent_id,Constants.Recently_Viewed,""));
+                categories.add(new CategoryModel(Constants.all_id,Constants.All,""));
+                categories.add(new CategoryModel(Constants.fav_id,Constants.Favorites,""));
+                categories.add(new CategoryModel(Constants.no_name_id,Constants.No_Name_Category,""));
                 categories.addAll(gson.fromJson(map, new TypeToken<List<CategoryModel>>(){}.getType()));
+                MyApp.series_categories = categories;
             }catch (Exception e){
 
             }
-            MyApp.series_categories = categories;
+
             callLiveStreams();
         } catch (Exception e) {
             e.printStackTrace();
             runOnUiThread(() -> {
+                btn_change_mode.setEnabled(true);
+                btn_login.setEnabled(true);
                 ConnectionDlg connectionDlg = new ConnectionDlg(LoginActivity.this, new ConnectionDlg.DialogConnectionListener() {
                     @Override
                     public void OnRetryClick(Dialog dialog) {
@@ -356,7 +391,6 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
                 connectionDlg.show();
             });
         }
-
     }
 
     private void callLiveStreams(){
@@ -490,13 +524,17 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
                 }
                 Constants.getAllFullModel(MyApp.fullModels).setCatchable_count(count_catchable);
                 Log.e("total catchable_count",count_catchable+"");
+
             }catch (Exception e){
 
             }
+
             callSeries();
         } catch (Exception e) {
             e.printStackTrace();
             runOnUiThread(() -> {
+                btn_change_mode.setEnabled(true);
+                btn_login.setEnabled(true);
                 ConnectionDlg connectionDlg = new ConnectionDlg(LoginActivity.this, new ConnectionDlg.DialogConnectionListener() {
                     @Override
                     public void OnRetryClick(Dialog dialog) {
@@ -512,7 +550,6 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
                 connectionDlg.show();
             });
         }
-
     }
 
     private void callSeries() {
@@ -549,6 +586,7 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
                 Constants.getAllCategory(MyApp.series_categories).setSeriesModels(allSeriesModels);
                 Constants.getFavoriteCatetory(MyApp.series_categories).setSeriesModels(MyApp.favSeriesModels);
                 Constants.putSeries(allSeriesModels);
+
             }catch (Exception e){
 
             }
@@ -557,6 +595,8 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
         } catch (Exception e) {
             e.printStackTrace();
             runOnUiThread(() -> {
+                btn_change_mode.setEnabled(true);
+                btn_login.setEnabled(true);
                 ConnectionDlg connectionDlg = new ConnectionDlg(LoginActivity.this, new ConnectionDlg.DialogConnectionListener() {
                     @Override
                     public void OnRetryClick(Dialog dialog) {
@@ -572,7 +612,6 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
                 connectionDlg.show();
             });
         }
-
     }
 
     private void putRecentSeriesModels(List<SeriesModel> allSeriesModels) {
@@ -630,10 +669,13 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
             }catch (Exception e){
 
             }
+
             getAuthorization();
         } catch (Exception e) {
             e.printStackTrace();
             runOnUiThread(() -> {
+                btn_change_mode.setEnabled(true);
+                btn_login.setEnabled(true);
                 ConnectionDlg connectionDlg = new ConnectionDlg(LoginActivity.this, new ConnectionDlg.DialogConnectionListener() {
                     @Override
                     public void OnRetryClick(Dialog dialog) {
@@ -717,31 +759,153 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
                     progressBar.setVisibility(View.GONE);
                 } else {
                     Toast.makeText(LoginActivity.this, "Server Error!", Toast.LENGTH_SHORT).show();
+                    btn_change_mode.setEnabled(true);
+                    btn_login.setEnabled(true);
                 }
             }catch (JSONException e){
                 e.printStackTrace();
+                btn_change_mode.setEnabled(true);
+                btn_login.setEnabled(true);
             }
         } catch (Exception e) {
             e.printStackTrace();
+            btn_change_mode.setEnabled(true);
+            btn_login.setEnabled(true);
         }
     }
 
+    private void macLogin(String mac){
+        btn_change_mode.setEnabled(false);
+        btn_login.setEnabled(false);
+        MyApp.mac_address = mac;
+        new Thread(() -> {
+            try {
+                Log.e("macGetTokenApi",MyApp.instance.getIptvclient().getUrl()+" "+MyApp.instance.getIptvclient().getToken());
+                String response = MyApp.instance.getIptvclient().macGetTokenApi(mac,MyApp.time_zone);
+                Log.e("macGetTokenApi",response+" "+MyApp.instance.getIptvclient().getUrl()+" "+MyApp.instance.getIptvclient().getToken());
+                JSONObject jsonObject = new JSONObject(response);
+                Gson gson = new Gson();
+                String id = "-1";
+                JSONArray jsonArray = jsonObject.getJSONArray("js");
+                for (int i=0;i<jsonArray.length();i++){
+                    JSONObject object = jsonArray.getJSONObject(i);
+                    MacCategoryModel macCategoryModel = gson.fromJson(object.toString(),MacCategoryModel.class);
+                    if (!macCategoryModel.getTitle().toLowerCase().equals("all")){
+                        id=macCategoryModel.getId();
+                        break;
+                    }
+                }
+//                id = "-1";
+                if (!id.equals("-1")){
+                    response = MyApp.instance.getIptvclient().macGetOrderedList(id);
+                    Log.e("macGetOrderedList",response);
+                    jsonObject = new JSONObject(response);
+                    JSONObject js = jsonObject.getJSONObject("js");
+                    JSONArray data = js.getJSONArray("data");
+                    JSONObject item = data.getJSONObject(0);
+                    String cmd = item.getString("cmd");
+                    if (cmd.contains("localhost")){
+                        MyApp.is_local = true;
+                        response = MyApp.instance.getIptvclient().macCmd(cmd);
+                        Log.e("macCmd",response);
+                        jsonObject = new JSONObject(response);
+                        js = jsonObject.getJSONObject("js");
+                        cmd = js.getString("cmd");
+                    }
+                    cmd = cmd.replaceAll("ffmpeg","").replaceAll("auto","");
+                    try {
+                        user = cmd.split("live/")[1].split("/")[0];
+                        password = cmd.split("live/")[1].split("/")[1];
+                    }catch (Exception e){
+                        user = cmd.split("/")[3];
+                        password = cmd.split("/")[4];
+                    }
+                    Log.e("user",user+" "+password);
+                    callLogin();
+                }else {
+                    response = MyApp.instance.getIptvclient().macGetVodCategory();
+                    Log.e("macGetVodCategory",response);
+                    jsonObject = new JSONObject(response);
+                    jsonArray = jsonObject.getJSONArray("js");
+                    for (int i=0;i<jsonArray.length();i++){
+                        JSONObject object = jsonArray.getJSONObject(i);
+                        MacCategoryModel macCategoryModel = gson.fromJson(object.toString(),MacCategoryModel.class);
+                        if (!macCategoryModel.getTitle().toLowerCase().equals("all")){
+                            id=macCategoryModel.getId();
+                            break;
+                        }
+                    }
+                    if (!id.equals("-1")){
+                        response = MyApp.instance.getIptvclient().macGetVodOrderedList(id);
+                        Log.e("macGetVodOrderedList",response);
+                        jsonObject = new JSONObject(response);
+                        JSONObject js = jsonObject.getJSONObject("js");
+                        JSONArray data = js.getJSONArray("data");
+                        JSONObject item = data.getJSONObject(0);
+                        String cmd = item.getString("cmd");
+                        Log.e("cmd",cmd);
+                        response = MyApp.instance.getIptvclient().macVodCmd(cmd);
+                        Log.e("macVodCmd",response);
+                        jsonObject = new JSONObject(response);
+                        js = jsonObject.getJSONObject("js");
+                        cmd = js.getString("cmd");
+                        cmd = cmd.replaceAll("ffmpeg","").replaceAll("auto","");
+                        String str_domain = cmd.replaceAll("ffmpeg","").replaceAll("auto","");
+                        str_domain = str_domain.split("/")[0]+str_domain.split("/")[1]+str_domain.split("/")[2]+"/";
+                        try {
+                                    SharedPreferences.Editor server_editor = serveripdetails.edit();
+                            server_editor.putString("ip",str_domain);
+                            server_editor.apply();
+                        }catch (Exception ignored){
+                        }
+                        try {
+                            user = cmd.split("live/")[1].split("/")[0];
+                            password = cmd.split("live/")[1].split("/")[1];
+                        }catch (Exception e){
+                            user = cmd.split("/")[4];
+                            password = cmd.split("/")[5];
+                        }
+                        MyApp.is_local = true;
+                        Log.e("user",user+" "+password);
+                        callLogin();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                runOnUiThread(()->{
+                    Toast.makeText(LoginActivity.this, getString(R.string.invalid_login_info),Toast.LENGTH_LONG).show();
+                    btn_change_mode.setEnabled(true);
+                    btn_login.setEnabled(true);
+                });
+            }
+        }).start();
+    }
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.login_btn:
-                if (name_txt.getText().toString().isEmpty()) {
-                    progressBar.setVisibility(View.GONE);
-                    Toast.makeText(this, "User name cannot be blank.", Toast.LENGTH_LONG).show();
-                    return;
-                } else if (pass_txt.getText().toString().isEmpty()) {
-                    progressBar.setVisibility(View.GONE);
-                    Toast.makeText(this, "Password cannot be blank.", Toast.LENGTH_LONG).show();
-                    return;
+                if (is_pass_mode){
+                    if (name_txt.getText().toString().isEmpty()) {
+                        progressBar.setVisibility(View.GONE);
+                        Toast.makeText(this, "User name cannot be blank.", Toast.LENGTH_LONG).show();
+                        return;
+                    } else if (pass_txt.getText().toString().isEmpty()) {
+                        progressBar.setVisibility(View.GONE);
+                        Toast.makeText(this, "Password cannot be blank.", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    user = name_txt.getText().toString();
+                    password = pass_txt.getText().toString();
+                    new Thread(this::callLogin).start();
+                }else {
+                    if (mac_address.getText().toString().isEmpty()) {
+                        progressBar.setVisibility(View.GONE);
+                        Toast.makeText(this, "Mac address cannot be blank.", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    macLogin(mac_address.getText().toString());
                 }
-                user = name_txt.getText().toString();
-                password = pass_txt.getText().toString();
-                new Thread(this::callLogin).start();
+
                 break;
             case R.id.checkbox:
                 is_remember = checkBox.isChecked();
@@ -749,6 +913,39 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
             case R.id.logo:
                 showVpnPinDlg();
                 break;
+            case R.id.btn_change_mode:
+                toggleMode(!is_pass_mode);
+                break;
+        }
+    }
+
+    private void toggleMode(boolean b) {
+        is_pass_mode = b;
+        if (is_pass_mode){
+            lay_user_pass.setVisibility(View.VISIBLE);
+            lay_mac.setVisibility(View.GONE);
+            btn_change_mode.setText(R.string.press_here_to_login_with_mac_address);
+            if(MyApp.instance.getPreference().get(Constants.getLoginInfo())!=null){
+                LoginModel loginModel = (LoginModel) MyApp.instance.getPreference().get(Constants.getLoginInfo());
+                user = loginModel.getUser_name();
+                password = loginModel.getPassword();
+                name_txt.setText(user);
+                pass_txt.setText(password);
+                checkBox.setChecked(true);
+                new Thread(this::callLogin).start();
+            }
+//            name_txt.setText("shakmain");
+//            pass_txt.setText("BKgYW4tzmv");
+        }else {
+            lay_user_pass.setVisibility(View.GONE);
+            lay_mac.setVisibility(View.VISIBLE);
+            mac_address.setText(MyApp.mac_address);
+//            mac_address.setText("08:C5:E1:AE:15:E1");
+            btn_change_mode.setText(R.string.press_here_to_login_with_user_pass);
+            if (MyApp.instance.getPreference().get(Constants.getMacAddress()) != null) {
+                checkBox.setChecked(true);
+                macLogin(MyApp.mac_address);
+            }
         }
     }
 
@@ -769,7 +966,7 @@ public class LoginActivity extends AppCompatActivity  implements View.OnClickLis
         VPNPinDlg pinDlg = new VPNPinDlg(LoginActivity.this, new VPNPinDlg.DlgPinListener() {
             @Override
             public void OnYesClick(Dialog dialog, String pin_code) {
-                String pin = (String )MyApp.instance.getPreference().get(Constants.getDIRECT_VPN_PIN_CODE());
+                String pin = Constants.GetPin4(LoginActivity.this);
                 if(pin_code.equalsIgnoreCase(pin)){
                     dialog.dismiss();
                     startActivity(new Intent(LoginActivity.this,VpnActivity.class));

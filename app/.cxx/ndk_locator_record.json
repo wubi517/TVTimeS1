@@ -1,5 +1,5 @@
 {
-  "ndkFolder": "/Users/sunpooh/Library/Android/sdk/ndk/20.1.5948944",
+  "ndkFolder": "D:\\AndroidSdk\\ndk-bundle",
   "messages": [
     {
       "level": "INFO",
@@ -15,19 +15,15 @@
     },
     {
       "level": "INFO",
-      "message": "sdkFolder is /Users/sunpooh/Library/Android/sdk"
+      "message": "sdkFolder is D:\\AndroidSdk"
     },
     {
       "level": "INFO",
-      "message": "Considering /Users/sunpooh/Library/Android/sdk/ndk-bundle in SDK ndk-bundle folder"
+      "message": "Considering D:\\AndroidSdk\\ndk-bundle in SDK ndk-bundle folder"
     },
     {
       "level": "INFO",
-      "message": "Considering /Users/sunpooh/Library/Android/sdk/ndk/20.1.5948944 in SDK ndk folder"
-    },
-    {
-      "level": "INFO",
-      "message": "No user requested version, choosing /Users/sunpooh/Library/Android/sdk/ndk/20.1.5948944 which is version 20.1.5948944"
+      "message": "No user requested version, choosing D:\\AndroidSdk\\ndk-bundle which is version 21.0.6113669"
     }
   ]
 }

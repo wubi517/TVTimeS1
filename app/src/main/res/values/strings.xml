@@ -391,7 +391,11 @@
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
     <string name="invalid_stream">Sorry, but there is a problem with the broadcast source</string>
-
-
+    
+    <string name="mac_address">Mac Address</string>
+    <string name="press_here_to_login_with_mac_address">Press here to login with mac address</string>
+    <string name="press_here_to_login_with_user_pass">Press here to login with user and pass</string>
+    <string name="invalid_login_info">Invalid Login Info!</string>
+    <string name="user_pass"><![CDATA[USER & PASS]]></string>
 
 </resources>

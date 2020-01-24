@@ -783,7 +783,26 @@ public class FragmentExoLiveTv extends MyFragment implements View.OnClickListene
         lastPlayingChannelPos = playChanelPos;
         releaseMediaPlayer();
         contentUri = MyApp.instance.getIptvclient().buildLiveStreamURL(MyApp.user, MyApp.pass,
-                MyApp.fullModels_filter.get(categoryPos).getChannels().get(playChanelPos).getStream_id()+"","ts");
+                MyApp.fullModels_filter.get(categoryPos).getChannels().get(playChanelPos).getStream_id()+"","m3u8");
+        if(MyApp.is_local){
+            String response;
+            JSONObject jsonObject;
+            JSONObject js;
+            String cmd = "ffmpeg http://localhost/ch/"+MyApp.fullModels_filter.get(categoryPos).getChannels().get(playChanelPos).getStream_id()+"_";
+            try {
+                response = MyApp.instance.getIptvclient().macCmd(cmd);
+                Log.e("macCmd",response);
+                jsonObject = new JSONObject(response);
+                js = jsonObject.getJSONObject("js");
+                cmd = js.getString("cmd");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            contentUri = cmd.replaceAll("ffmpeg","").replaceAll("auto","").replaceAll("\\s+","");
+        }else {
+            contentUri = MyApp.instance.getIptvclient().buildLiveStreamURL(MyApp.user, MyApp.pass,
+                    MyApp.fullModels_filter.get(categoryPos).getChannels().get(playChanelPos).getStream_id()+"","m3u8");
+        }
         Log.e("url",contentUri);
         //add recent series
         EPGChannel epgChannel = MyApp.fullModels_filter.get(categoryPos).getChannels().get(playChanelPos);
