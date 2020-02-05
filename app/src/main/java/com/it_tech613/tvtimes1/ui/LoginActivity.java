@@ -934,13 +934,13 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                 checkBox.setChecked(true);
                 new Thread(this::callLogin).start();
             }
-//            name_txt.setText("shakmain");
-//            pass_txt.setText("BKgYW4tzmv");
+//            name_txt.setText("stetest");
+//            pass_txt.setText("uOpRcmMM");
         }else {
             lay_user_pass.setVisibility(View.GONE);
             lay_mac.setVisibility(View.VISIBLE);
             mac_address.setText(MyApp.mac_address);
-//            mac_address.setText("08:C5:E1:AE:15:E1");
+//            mac_address.setText("00:1A:79:0E:38:B7");
             btn_change_mode.setText(R.string.press_here_to_login_with_user_pass);
             if (MyApp.instance.getPreference().get(Constants.getMacAddress()) != null) {
                 checkBox.setChecked(true);

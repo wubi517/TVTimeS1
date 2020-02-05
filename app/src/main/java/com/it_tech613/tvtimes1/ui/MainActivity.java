@@ -69,12 +69,12 @@ public class MainActivity extends AppCompatActivity {
 
         fragmentList = new ArrayList<>();
         fragmentList.add(new FragmentHome());
-        if (MyApp.firstServer == FirstServer.first)fragmentList.add(new FragmentLiveTv());
-        if (MyApp.firstServer == FirstServer.first)fragmentList.add(new FragmentMultiScreen());
+        if (MyApp.firstServer != FirstServer.second)fragmentList.add(new FragmentLiveTv());
+        if (MyApp.firstServer != FirstServer.second)fragmentList.add(new FragmentMultiScreen());
         fragmentList.add(new FragmentMovies());
         fragmentList.add(new FragmentSeries());
-        if (MyApp.firstServer == FirstServer.first)fragmentList.add(new FragmentTvGuide());
-        if (MyApp.firstServer == FirstServer.first)fragmentList.add(new FragmentCatchupCategory());
+        if (MyApp.firstServer != FirstServer.second)fragmentList.add(new FragmentTvGuide());
+        if (MyApp.firstServer != FirstServer.second)fragmentList.add(new FragmentCatchupCategory());
         fragmentList.add(new FragmentSettings());
 
         fragmentList.add(new FragmentSeriesHolder());//7
@@ -89,13 +89,13 @@ public class MainActivity extends AppCompatActivity {
 
         final List<SideMenu> list = new ArrayList<SideMenu>();
         list.add(new SideMenu("Home"));
-        if (MyApp.firstServer == FirstServer.first)list.add(new SideMenu("Live Tv"));
-        if (MyApp.firstServer == FirstServer.first)list.add(new SideMenu("Multi TV"));
+        if (MyApp.firstServer != FirstServer.second)list.add(new SideMenu("Live Tv"));
+        if (MyApp.firstServer != FirstServer.second)list.add(new SideMenu("Multi TV"));
         list.add(new SideMenu("Movies"));
         list.add(new SideMenu("Series"));
-        if (MyApp.firstServer == FirstServer.first)list.add(new SideMenu("Tv Guide"));
+        if (MyApp.firstServer != FirstServer.second)list.add(new SideMenu("Tv Guide"));
         list.add(new SideMenu("Sports Guide"));
-        if (MyApp.firstServer == FirstServer.first)list.add(new SideMenu("Catchup"));
+        if (MyApp.firstServer != FirstServer.second)list.add(new SideMenu("Catchup"));
         list.add(new SideMenu("Settings"));
         list.add(new SideMenu("Switch Server"));
 
@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
         Constants.getLiveFilter();
         Constants.getSeriesFilter();
 
-        if (MyApp.firstServer==FirstServer.first) {
+        if (MyApp.firstServer!=FirstServer.second) {
             select_player = (int) MyApp.instance.getPreference().get(Constants.getCurrentPlayer());
             switch (select_player) {
                 case 0:

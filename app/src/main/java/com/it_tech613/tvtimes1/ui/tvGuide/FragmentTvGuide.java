@@ -408,7 +408,12 @@ public class FragmentTvGuide extends MyFragment implements IVLCVout.Callback, Su
             setDescription(fullModel.getChannels().get(0),null);
             return;
         }
-        setDescription(fullModel.getChannels().get(0),fullModel.getChannels().get(0).getEvents().get(Constants.findNowEvent(fullModel.getChannels().get(0).getEvents())));//Constants.findNowEvent(fullModel.getChannels().get(0).getEvents())
+        try {
+            setDescription(fullModel.getChannels().get(0),fullModel.getChannels().get(0).getEvents().get(Constants.findNowEvent(fullModel.getChannels().get(0).getEvents())));//Constants.findNowEvent(fullModel.getChannels().get(0).getEvents())
+        }catch (Exception e){
+            setDescription(fullModel.getChannels().get(0),null);
+        }
+
     }
 
     private void playVideo(EPGChannel epgChannel) {

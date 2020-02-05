@@ -602,7 +602,7 @@ public class FragmentIjkLiveTv extends MyFragment implements View.OnClickListene
             constraintSet.setGuidelinePercent(R.id.guideline3, 1.0f);
 
             constraintSet.applyTo(rootView);
-            ((MainActivity) requireActivity()).toggleFullScreen(is_full);
+//            ((MainActivity) requireActivity()).toggleFullScreen(is_full);
 
             width = MyApp.SCREEN_WIDTH;
             height =MyApp.SCREEN_HEIGHT;
@@ -790,6 +790,7 @@ public class FragmentIjkLiveTv extends MyFragment implements View.OnClickListene
                     }else {
                         mHandler.removeCallbacks(mUpdateTimeTask);
                         releaseMediaPlayer();
+                        ((MainActivity)requireActivity()).toggleFullScreen(false);
                         requireActivity().getSupportFragmentManager().beginTransaction()
                                 .replace(R.id.container,((MainActivity)requireActivity()).fragmentList.get(0))//FragmentCatchupDetail
                                 .addToBackStack(null).commit();

@@ -148,7 +148,7 @@ public class FragmentSettings extends MyFragment {
         builder.setSingleChoiceItems(screen_mode_list, current_position,
                 (dialog, which) -> current_position =which);
         builder.setPositiveButton("OK", (dialog, which) -> {
-            if (MyApp.firstServer== FirstServer.first) {
+            if (MyApp.firstServer!= FirstServer.second) {
                 switch (current_position) {
                     case 0:
                         ((MainActivity) requireActivity()).fragmentList.set(1, new FragmentLiveTv());
