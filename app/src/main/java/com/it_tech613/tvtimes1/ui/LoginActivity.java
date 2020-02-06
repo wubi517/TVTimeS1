@@ -820,6 +820,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                         user = cmd.split("/")[3];
                         password = cmd.split("/")[4];
                     }
+                    Thread.sleep(3000);
                     Log.e("user",user+" "+password);
                     callLogin();
                 }else {
@@ -866,6 +867,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                             password = cmd.split("/")[5];
                         }
                         MyApp.is_local = true;
+                        Thread.sleep(3000);
                         Log.e("user",user+" "+password);
                         callLogin();
                     }
